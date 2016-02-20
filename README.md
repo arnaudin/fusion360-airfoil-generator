@@ -15,12 +15,12 @@ Generate sketch profiles for NACA airfoils in Fusion 360
 
 ![NACA Airfoil Rendering](resources/airfoil_rendering_v1.png?raw=true "NACA Airfoil Rendering")
 
-## Installation
+## Installation :floppy_disk:
 
 Two options:
 
-# Drop files into your "Autodesk Fusion 360\API\Scripts" directory.
-# Install from the Fusion 360 app store
+1. Drop files into your "Autodesk Fusion 360\API\Scripts" directory.
+2. Install from the Fusion 360 app store
 
 ## Credits :raised_hands:
 
