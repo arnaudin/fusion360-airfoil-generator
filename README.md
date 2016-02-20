@@ -2,20 +2,27 @@
 
 Generate sketch profiles for NACA airfoils in Fusion 360
 
-## Features
+## Features :rocket:
 
 - Supports 4 and 5 series NACA airfoils
 - User specified number of segments
 - Cosine or linear spacing option
 - Finite thickness trailing edge option
 
-## Screenshots 
+## Screenshots :camera: :computer:
 
 ![NACA Airfoil Generator](resources/app_screenshot_v1.jpg?raw=true "NACA Airfoil Generator")
 
 ![NACA Airfoil Rendering](resources/airfoil_rendering_v1.png?raw=true "NACA Airfoil Rendering")
 
-## Credits
+## Installation
+
+Two options:
+
+# Drop files into your "Autodesk Fusion 360\API\Scripts" directory.
+# Install from the Fusion 360 app store
+
+## Credits :raised_hands:
 
 Portions of this code are from [naca.py by Dirk Gorissen](https://github.com/dgorissen/naca). 
 
