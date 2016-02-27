@@ -1,37 +1,38 @@
 # fusion360-airfoil-generator
 
-Generate sketch profiles for NACA airfoils in Fusion 360
+Generate sketch profiles for NACA airfoils in Fusion 360.
+
+Available both as a script and add-in.
 
 ## Features :rocket:
 
 - Supports 4 and 5 series NACA airfoils
 - User specified number of segments
-- Cosine or linear spacing option
+- Half cosine or linear spacing option
 - Finite thickness trailing edge option
 
-## Screenshots :camera: :computer:
+### Screenshots :camera: :computer:
 
 ![NACA Airfoil Generator](resources/app_screenshot_v1.jpg?raw=true "NACA Airfoil Generator")
 
 ![NACA Airfoil Rendering](resources/airfoil_rendering_v1.png?raw=true "NACA Airfoil Rendering")
 
-## Installation :floppy_disk:
+## Installation and Usage :floppy_disk:
 
 Two options:
 
-1. Drop files into your "Autodesk Fusion 360\API\Scripts" directory.
-2. Install from the Fusion 360 app store
+1. Download files, then see [how to install sample Add-Ins or Scripts](https://rawgit.com/AutodeskFusion360/AutodeskFusion360.github.io/master/Installation.html) within Fusion 360. Add-in version is recommended but script is also provided.
+2. Download and install from the Fusion 360 app store [coming soon].
 
 ## Credits :raised_hands:
 
-Portions of this code are from [naca.py by Dirk Gorissen](https://github.com/dgorissen/naca). 
+NACA generation portions of this code are from [naca.py by Dirk Gorissen](https://github.com/dgorissen/naca). 
 
-Also, thanks to the Fusion 360 development team. 
-
-## Contributing :heart:
-
-Bug reports and pull requests are welcome on [GitHub](https://github.com/arnaudin/fusion360-airfoil-generator). You can also fork or download this code.
+Thanks to the [Fusion 360 development team](https://github.com/AutodeskFusion360) for code samples and the development platform/API. 
 
 ## License :neckbeard:
 
-This script is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+This script is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](https://raw.githubusercontent.com/arnaudin/fusion360-airfoil-generator/master/LICENSE) file for full details.
+
+## Author :pencil:
+This add-in was created by [Ryan Arnaudin](http://ryanarnaudin.com).
