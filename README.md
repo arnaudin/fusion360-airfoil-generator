@@ -19,10 +19,22 @@ Available both as a script and add-in.
 
 ## Installation and Usage :floppy_disk:
 
+### Installation
+
 Two options:
 
 1. Download files, then see [how to install sample Add-Ins or Scripts](https://rawgit.com/AutodeskFusion360/AutodeskFusion360.github.io/master/Installation.html) within Fusion 360. Add-in version is recommended but script is also provided.
 2. Download and install from the Fusion 360 app store [coming soon].
+
+### Usage
+
+1. If using the addin, select the *Airfoil* option from the *SKETCH* panel. For the script, execute script from *ADD-INS* panel.
+2. Specify the NACA number for a 4 or 5 series airfoil.
+3. Specify the number of points per side. Total points will be 2*numPoints+1. 
+4. Selecting half cosine spacing will result in finer discretization near the leading edge of the airfoil compared to the default constant spacing. 
+5. Selecting finite thickness will apply a finite thickness at the trailing edge compared to the default zero thickness.
+6. Clicking *OK* generates the airfoil profile.
+7. Scale, extrude, etc. in the modeling environment. 
 
 ## Credits :raised_hands:
 
