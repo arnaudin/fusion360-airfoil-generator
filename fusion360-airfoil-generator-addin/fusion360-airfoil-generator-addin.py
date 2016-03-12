@@ -14,6 +14,8 @@ defaultAirfoilProfile = '2412'
 defaultAirfoilNumPts = 120
 defaultAirfoilHalfCosine = False
 defaultAirfoilFT = False
+maxNumPts = 500
+minNumPts = 10
 
 # global set of event handlers to keep them referenced for the duration of the command
 handlers = []
@@ -304,6 +306,10 @@ def connectPointsMidpointSplines(pts, sketchName=''):
     # Experimental, not implemented
     # Connects a closed set of 2D points with midpoint splines
     # Format of pts should be ([x1,x2,...,xn][y1,y2,...,yn])
+    app = adsk.core.Application.get()
+    ui  = app.userInterface
+    design = app.activeProduct       
+    
     root = design.rootComponent
     sketch = root.sketches.add(root.xYConstructionPlane)
     sketch.name = "Airfoil"
@@ -402,7 +408,10 @@ def run(context):
                                 ui.messageBox('Only 4 and 5 series NACA airfoils are supported')
                                 airfoilError = True
                             try:
-                                int(float(airfoilProfile)) 
+                                airfoilProfileInt = int(float(airfoilProfile)) 
+                                if airfoilProfileInt < 0:
+                                    ui.messageBox('NACA input must be a 4 or 5 digit positive number')
+                                    airfoilError = True                                
                             except:
                                 ui.messageBox('NACA input must be 4 or 5 digits in the format: 2412')
                                 airfoilError = True
@@ -410,6 +419,15 @@ def run(context):
                             airfoilNumPts = input.value      
                             try:
                                 airfoilNumPts = int(float(airfoilNumPts)) 
+                                if airfoilNumPts < 0:
+                                    ui.messageBox('Number of points must be a positive integer')
+                                    airfoilError = True
+                                elif airfoilNumPts > maxNumPts:
+                                    ui.messageBox('Number of points is currently limited to ' + str(maxNumPts) + '. Higher limits will degrade performance. If you know what you are doing, update the maxNumPts constant in code')
+                                    airfoilError = True
+                                elif airfoilNumPts < minNumPts:
+                                    ui.messageBox('Number of points should be greater than ' + str(minNumPts) + ' to capture the airfoil shape. If you know what you are doing, update the minNumPts constant in code')
+                                    airfoilError = True
                             except:
                                 ui.messageBox('Number of points must be an integer')
                                 airfoilError = True
