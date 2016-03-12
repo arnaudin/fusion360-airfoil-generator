@@ -23,8 +23,8 @@ Available both as a script and add-in.
 
 Two options:
 
-1. Download files, then see [how to install sample Add-Ins or Scripts](https://rawgit.com/AutodeskFusion360/AutodeskFusion360.github.io/master/Installation.html) within Fusion 360. Add-in version is recommended but script is also provided.
-2. Download and install from the Fusion 360 app store [coming soon].
+1. [Download](https://apps.autodesk.com/FUSION/en/Detail/Index?id=appstore.exchange.autodesk.com%3afusion360airfoilgenerator_windows64%3aen) and install from the Fusion 360 app store.
+2. Download source files here, then see [how to install sample Add-Ins or Scripts](https://rawgit.com/AutodeskFusion360/AutodeskFusion360.github.io/master/Installation.html) within Fusion 360. Add-in version is recommended but script is also provided.
 
 ### Usage
 
