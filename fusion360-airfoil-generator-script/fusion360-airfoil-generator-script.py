@@ -6,13 +6,14 @@ from math import pi
 from math import pow
 from math import sqrt
 
-import adsk.core, adsk.fusion, traceback
+import adsk.core, adsk.fusion, adsk.cam, traceback
 
 # global set of event handlers to keep them referenced for the duration of the command
 handlers = []
 
 defaultAirfoilProfile = '2412'
 defaultAirfoilNumPts = 30
+defaultAirfoilCordLength = 100
 defaultAirfoilHalfCosine = False
 defaultAirfoilFT = False
 
@@ -288,17 +289,18 @@ class AirfoilCommandExecuteHandler(adsk.core.CommandEventHandler):
         airfoilError = False
         airfoilProfile = defaultAirfoilProfile
         airfoilNumPts = defaultAirfoilNumPts
+        airfoilCordLength = defaultAirfoilCordLength
         airfoilHalfCosine = defaultAirfoilHalfCosine
         airfoilFT = defaultAirfoilFT
-        
+
         # Generate the airfoil sketch for given parameters
         try:
             command = args.firingEvent.sender
             inputs = command.commandInputs
-            
+
             for input in inputs:
                 if input.id == 'airfoilProfile':
-                    airfoilProfile = input.value      
+                    airfoilProfile = input.value
                     airfoilProfileLen = len(airfoilProfile)
                     if airfoilProfileLen > 5:
                         ui.messageBox('Only 4 and 5 series NACA airfoils are supported')
@@ -307,17 +309,19 @@ class AirfoilCommandExecuteHandler(adsk.core.CommandEventHandler):
                         ui.messageBox('Only 4 and 5 series NACA airfoils are supported')
                         airfoilError = True
                     try:
-                        int(float(airfoilProfile)) 
+                        int(float(airfoilProfile))
                     except:
                         ui.messageBox('NACA input must be 4 or 5 digits in the format: 2412')
                         airfoilError = True
                 elif input.id == 'airfoilNumPts':
-                    airfoilNumPts = input.value      
+                    airfoilNumPts = input.value
                     try:
-                        airfoilNumPts = int(float(airfoilNumPts)) 
+                        airfoilNumPts = int(float(airfoilNumPts))
                     except:
                         ui.messageBox('Number of points must be an integer')
                         airfoilError = True
+                elif input.id == 'airfoilCordLength':
+                    airfoilCordLength = input.value
                 elif input.id == 'airfoilHalfCosine':
                     airfoilHalfCosine = input.value
                 elif input.id == 'airfoilFT':
@@ -325,15 +329,15 @@ class AirfoilCommandExecuteHandler(adsk.core.CommandEventHandler):
                 else:
                     ui.messageBox('Unrecognized input: ' + input.id)
                     airfoilError = True
-                    
+
             if airfoilError == False:
                 pts = naca(airfoilProfile, airfoilNumPts, airfoilFT, airfoilHalfCosine)
                 sketchName = ' NACA ' + str(airfoilProfile)
-                connectPointsLines(pts, sketchName)  
+                connectPointsLines(pts, sketchName, airfoilCordLength)
                 args.isValidResult = True
             else:
                 args.isValidResult = False
-            
+
         except:
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -349,9 +353,9 @@ class AirfoilCommandDestroyHandler(adsk.core.CommandEventHandler):
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
 class AirfoilCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
-    # Create Airfoil Command    
+    # Create Airfoil Command
     def __init__(self):
-        super().__init__()        
+        super().__init__()
     def notify(self, args):
         try:
             cmd = args.command
@@ -367,16 +371,21 @@ class AirfoilCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs = cmd.commandInputs
             inputs.addStringValueInput('airfoilProfile', 'NACA profile', defaultAirfoilProfile)
             inputs.addStringValueInput('airfoilNumPts', 'Points per side', str(defaultAirfoilNumPts))
+            inputs.addValueInput('airfoilCordLength', 'Cord length', 'mm', adsk.core.ValueInput.createByReal(defaultAirfoilCordLength))
             inputs.addBoolValueInput('airfoilHalfCosine', 'Half cosine spacing', True, '', defaultAirfoilHalfCosine)
             inputs.addBoolValueInput('airfoilFT', 'Finite thickness TE', True, '', defaultAirfoilFT)
-            
+
         except:
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-def connectPointsLines(pts, sketchName=''):
+def connectPointsLines(pts, sketchName='', scale=1):
     # Connects a closed set of 2D points with line segments
     # Format of pts should be ([x1,x2,...,xn][y1,y2,...,yn])
+    app = adsk.core.Application.get()
+    ui  = app.userInterface
+    design = app.activeProduct
+
     root = design.rootComponent
     sketch = root.sketches.add(root.xYConstructionPlane)
     sketch.name = "Airfoil" + sketchName
@@ -384,23 +393,21 @@ def connectPointsLines(pts, sketchName=''):
 
     xs = pts[0]
     ys = pts[1]
-    
-    numpts = len(xs)
-    
+    coordinates = list(zip(xs, ys))
+    points = [adsk.core.Point3D.create(x * scale, y * scale, 0) for (x, y) in coordinates]
     lines = sketch.sketchCurves.sketchLines
-    
-    for i in range(numpts -1):
-        point1x = xs[i]
-        point1y = ys[i]
-        point2x = xs[i+1]
-        point2y = ys[i+1]
-        
-        lines.addByTwoPoints(adsk.core.Point3D.create(point1x, point1y, 0), adsk.core.Point3D.create(point2x, point2y, 0))
-    
-    # Connect first and last points
-    lines.addByTwoPoints(adsk.core.Point3D.create(xs[numpts-1], ys[numpts-1], 0), adsk.core.Point3D.create(xs[0], ys[0], 0))
-        
-    sketch.isComputeDeferred = False        
+    previousPoint = points[0]
+    stop = len(points) - 1
+    for index in range(1, stop):
+        line = lines.addByTwoPoints(previousPoint, points[index])
+        if index == 1:
+                firstPoint = line.startSketchPoint
+        previousPoint = line.endSketchPoint
+
+    # Connect to first point to close the polygon
+    lines.addByTwoPoints(previousPoint, firstPoint)
+
+    sketch.isComputeDeferred = False
 
 def connectPointsMidpointSplines(pts, sketchName=''):
     # Experimental, not implemented
@@ -413,29 +420,29 @@ def connectPointsMidpointSplines(pts, sketchName=''):
 
     xs = pts[0]
     ys = pts[1]
-    
+
     numpts = len(xs)
-    
+
     points3d = adsk.core.ObjectCollection.create()
-        
+
     for i in range(numpts-1):
         point1x = xs[i]
         point1y = ys[i]
         point2x = xs[i+1]
         point2y = ys[i+1]
-        
+
         xMidPt = (point2x + point1x) / 2
         yMidPt = (point2y + point1y) / 2
-        
+
         points3d.add(adsk.core.Point3D.create(xMidPt, yMidPt, 0))
-    
+
     spline = sketch.sketchCurves.sketchFittedSplines.add(points3d)
     spline.isClosed = True
-        
-    sketch.isComputeDeferred = False    
-        
+
+    sketch.isComputeDeferred = False
+
 def run(context):
-    try:        
+    try:
         commandDefinitions = ui.commandDefinitions
         #check the command exists or not
         cmdDef = commandDefinitions.itemById('Airfoil')
@@ -444,17 +451,17 @@ def run(context):
                     'Create Airfoil',
                     'Create an airfoil.',
                     './resources') # relative resource file path is specified
-    
+
         onCommandCreated = AirfoilCommandCreatedHandler()
         cmdDef.commandCreated.add(onCommandCreated)
         # keep the handler referenced beyond this function
         handlers.append(onCommandCreated)
         inputs = adsk.core.NamedValues.create()
         cmdDef.execute(inputs)
-        
+
         # prevent this module from being terminate when the script returns, because we are waiting for event handlers to fire
         adsk.autoTerminate(False)
-        
+
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
