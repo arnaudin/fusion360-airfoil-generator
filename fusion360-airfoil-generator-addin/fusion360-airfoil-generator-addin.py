@@ -7,11 +7,12 @@ from math import pi
 from math import pow
 from math import sqrt
 
-import adsk.core, adsk.fusion, traceback
+import adsk.core, adsk.fusion, adsk.cam, traceback
 
 commandIdOnPanel = 'airfoilCommandOnPanel'
 defaultAirfoilProfile = '2412'
 defaultAirfoilNumPts = 120
+defaultAirfoilCordLength = 100
 defaultAirfoilHalfCosine = False
 defaultAirfoilFT = False
 maxNumPts = 500
@@ -270,13 +271,13 @@ def naca(number, n, finite_TE = defaultAirfoilFT, half_cosine_spacing = defaultA
     else:
         raise Exception
 
-def connectPointsLines(pts, sketchName=''):
+def connectPointsLines(pts, sketchName='', scale=1):
     # Connects a closed set of 2D points with line segments
     # Format of pts should be ([x1,x2,...,xn][y1,y2,...,yn])
     app = adsk.core.Application.get()
     ui  = app.userInterface
-    design = app.activeProduct    
-    
+    design = app.activeProduct
+
     root = design.rootComponent
     sketch = root.sketches.add(root.xYConstructionPlane)
     sketch.name = "Airfoil" + sketchName
@@ -284,23 +285,21 @@ def connectPointsLines(pts, sketchName=''):
 
     xs = pts[0]
     ys = pts[1]
-    
-    numpts = len(xs)
-    
+    coordinates = list(zip(xs, ys))
+    points = [adsk.core.Point3D.create(x * scale, y * scale, 0) for (x, y) in coordinates]
     lines = sketch.sketchCurves.sketchLines
-    
-    for i in range(numpts -1):
-        point1x = xs[i]
-        point1y = ys[i]
-        point2x = xs[i+1]
-        point2y = ys[i+1]
-        
-        lines.addByTwoPoints(adsk.core.Point3D.create(point1x, point1y, 0), adsk.core.Point3D.create(point2x, point2y, 0))
-    
-    # Connect first and last points
-    lines.addByTwoPoints(adsk.core.Point3D.create(xs[numpts-1], ys[numpts-1], 0), adsk.core.Point3D.create(xs[0], ys[0], 0))
-        
-    sketch.isComputeDeferred = False        
+    previousPoint = points[0]
+    stop = len(points) - 1
+    for index in range(1, stop):
+        line = lines.addByTwoPoints(previousPoint, points[index])
+        if index == 1:
+                firstPoint = line.startSketchPoint
+        previousPoint = line.endSketchPoint
+
+    # Connect to first point to close the polygon
+    lines.addByTwoPoints(previousPoint, firstPoint)
+
+    sketch.isComputeDeferred = False
 
 def connectPointsMidpointSplines(pts, sketchName=''):
     # Experimental, not implemented
@@ -308,8 +307,8 @@ def connectPointsMidpointSplines(pts, sketchName=''):
     # Format of pts should be ([x1,x2,...,xn][y1,y2,...,yn])
     app = adsk.core.Application.get()
     ui  = app.userInterface
-    design = app.activeProduct       
-    
+    design = app.activeProduct
+
     root = design.rootComponent
     sketch = root.sketches.add(root.xYConstructionPlane)
     sketch.name = "Airfoil"
@@ -317,26 +316,26 @@ def connectPointsMidpointSplines(pts, sketchName=''):
 
     xs = pts[0]
     ys = pts[1]
-    
+
     numpts = len(xs)
-    
+
     points3d = adsk.core.ObjectCollection.create()
-        
+
     for i in range(numpts-1):
         point1x = xs[i]
         point1y = ys[i]
         point2x = xs[i+1]
         point2y = ys[i+1]
-        
+
         xMidPt = (point2x + point1x) / 2
         yMidPt = (point2y + point1y) / 2
-        
+
         points3d.add(adsk.core.Point3D.create(xMidPt, yMidPt, 0))
-    
+
     spline = sketch.sketchCurves.sketchFittedSplines.add(points3d)
     spline.isClosed = True
-        
-    sketch.isComputeDeferred = False   
+
+    sketch.isComputeDeferred = False
 
 def commandDefinitionById(id):
     app = adsk.core.Application.get()
@@ -374,9 +373,17 @@ def run(context):
     try:
         app = adsk.core.Application.get()
         ui = app.userInterface
-        
+
         commandName = 'Airfoil'
-        commandDescription = 'Generate sketch profiles for NACA 4 and 5 series airfoils.\n\nSpecify a NACA 4 or 5 series airfoil in the format "2412" and choose the number of points on top & bottom for discretization. Resulting profile will have 2*numPoints+1 total.\n\nHalf cosine spacing provides finer discretization near the leading edge of the airfoil compared to constant spacing, resulting in a smoother LE.\n\nFinite thickness is applied at the trailing edge, in contrast to a zero thickness in which the upper and lower surfaces meet at a sharp point.\n\n'
+        commandDescription = """
+        Generate sketch profiles for NACA 4 and 5 series airfoils.
+
+        Specify a NACA 4 or 5 series airfoil in the format "2412" and choose the number of points on top & bottom for discretization. Resulting profile will have 2*numPoints+1 total.
+
+        Half cosine spacing provides finer discretization near the leading edge of the airfoil compared to constant spacing, resulting in a smoother LE.
+
+        Finite thickness is applied at the trailing edge, in contrast to a zero thickness in which the upper and lower surfaces meet at a sharp point.
+        """
         commandResources = './resources'
         iconResources = './resources'
 
@@ -391,15 +398,16 @@ def run(context):
                 airfoilNumPts = defaultAirfoilNumPts
                 airfoilHalfCosine = defaultAirfoilHalfCosine
                 airfoilFT = defaultAirfoilFT
-                
+                airfoilCordLength = defaultAirfoilCordLength
+
                 # Generate the airfoil sketch for given parameters
                 try:
                     command = args.firingEvent.sender
                     inputs = command.commandInputs
-                    
+
                     for input in inputs:
                         if input.id == 'airfoilProfile':
-                            airfoilProfile = input.value      
+                            airfoilProfile = input.value
                             airfoilProfileLen = len(airfoilProfile)
                             if airfoilProfileLen > 5:
                                 ui.messageBox('Only 4 and 5 series NACA airfoils are supported')
@@ -408,17 +416,17 @@ def run(context):
                                 ui.messageBox('Only 4 and 5 series NACA airfoils are supported')
                                 airfoilError = True
                             try:
-                                airfoilProfileInt = int(float(airfoilProfile)) 
+                                airfoilProfileInt = int(float(airfoilProfile))
                                 if airfoilProfileInt < 0:
                                     ui.messageBox('NACA input must be a 4 or 5 digit positive number')
-                                    airfoilError = True                                
+                                    airfoilError = True
                             except:
                                 ui.messageBox('NACA input must be 4 or 5 digits in the format: 2412')
                                 airfoilError = True
                         elif input.id == 'airfoilNumPts':
-                            airfoilNumPts = input.value      
+                            airfoilNumPts = input.value
                             try:
-                                airfoilNumPts = int(float(airfoilNumPts)) 
+                                airfoilNumPts = int(float(airfoilNumPts))
                                 if airfoilNumPts < 0:
                                     ui.messageBox('Number of points must be a positive integer')
                                     airfoilError = True
@@ -435,28 +443,30 @@ def run(context):
                             airfoilHalfCosine = input.value
                         elif input.id == 'airfoilFT':
                             airfoilFT = input.value
+                        elif input.id == 'airfoilCordLength':
+                            airfoilCordLength = input.value
                         else:
                             ui.messageBox('Unrecognized input: ' + input.id)
                             airfoilError = True
-                            
+
                     if airfoilError == False:
                         pts = naca(airfoilProfile, airfoilNumPts, airfoilFT, airfoilHalfCosine)
                         sketchName = ' NACA ' + str(airfoilProfile)
-                        connectPointsLines(pts, sketchName)  
+                        connectPointsLines(pts, sketchName, airfoilCordLength)
                         args.isValidResult = True
                     else:
                         args.isValidResult = False
-                    
+
                 except:
                     if ui:
                         ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
-                    
-            
-    
+
+
+
             class AirfoilCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
-                # Create Airfoil Command    
+                # Create Airfoil Command
                 def __init__(self):
-                    super().__init__()        
+                    super().__init__()
                 def notify(self, args):
                     try:
                         cmd = args.command
@@ -466,20 +476,21 @@ def run(context):
                         # keep the handler referenced beyond this function
                         handlers.append(onExecute)
 
-            
+
                         #define the UI inputs
                         inputs = cmd.commandInputs
                         inputs.addStringValueInput('airfoilProfile', 'NACA profile', defaultAirfoilProfile)
                         inputs.addStringValueInput('airfoilNumPts', 'Points per side', str(defaultAirfoilNumPts))
+                        inputs.addValueInput('airfoilCordLength', 'Cord length', 'mm', adsk.core.ValueInput.createByReal(defaultAirfoilCordLength))
                         inputs.addBoolValueInput('airfoilHalfCosine', 'Half cosine spacing', True, '', defaultAirfoilHalfCosine)
                         inputs.addBoolValueInput('airfoilFT', 'Finite thickness TE', True, '', defaultAirfoilFT)
-                        
+
                     except:
                         if ui:
                             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
-    
+
             commandDefinitions_ = ui.commandDefinitions
-    
+
             # add a command on create panel in modeling workspace
             workspaces_ = ui.workspaces
             modelingWorkspace_ = workspaces_.itemById('FusionSolidEnvironment')
