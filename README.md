@@ -14,7 +14,7 @@ Available both as a script and add-in.
 
 ### Screenshots :camera: :computer:
 
-![NACA Airfoil Generator](resources/app_screenshot_v1.jpg?raw=true "NACA Airfoil Generator")
+![NACA Airfoil Generator](resources/app_screenshot_v2.png?raw=true "NACA Airfoil Generator")
 
 ![NACA Airfoil Rendering](resources/airfoil_rendering_v1.png?raw=true "NACA Airfoil Rendering")
 
