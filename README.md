@@ -8,6 +8,7 @@ Available both as a script and add-in.
 
 - Supports 4 and 5 series NACA airfoils
 - User specified number of segments
+- User specified chord length
 - Half cosine or linear spacing option
 - Finite thickness trailing edge option
 
@@ -23,7 +24,7 @@ Available both as a script and add-in.
 
 Two options:
 
-1. [Download](https://apps.autodesk.com/FUSION/en/Detail/Index?id=appstore.exchange.autodesk.com%3afusion360airfoilgenerator_windows64%3aen) and install from the Fusion 360 app store for Win64 only.
+1. [Download](https://apps.autodesk.com/FUSION/en/Detail/Index?id=appstore.exchange.autodesk.com%3afusion360airfoilgenerator_windows64%3aen) and install from the Fusion 360 app store for Win64 only. Note that the app store build is not kept current and predates the chord length option — install from source to get the latest features.
 2. Download source files here, then see [how to install sample Add-Ins or Scripts](https://rawgit.com/AutodeskFusion360/AutodeskFusion360.github.io/master/Installation.html) within Fusion 360. Add-in version is recommended but script is also provided.  Be sure to copy the resources into a "resources" directory in the script or addin directory.  This process works with Mac OSX Fusion 360.
 
 ### Usage
@@ -31,14 +32,17 @@ Two options:
 1. If using the addin, select the *Airfoil* option from the *SKETCH* panel. For the script, execute script from *ADD-INS* panel.
 2. Specify the NACA number for a 4 or 5 series airfoil.
 3. Specify the number of points per side. Total points will be 2*numPoints+1. 
-4. Selecting half cosine spacing will result in finer discretization near the leading edge of the airfoil compared to the default constant spacing. 
-5. Selecting finite thickness will apply a finite thickness at the trailing edge compared to the default zero thickness.
-6. Clicking *OK* generates the airfoil profile.
-7. Scale, extrude, etc. in the modeling environment. 
+4. Specify the chord length. The profile is generated at this size, so no scaling is needed afterwards.
+5. Selecting half cosine spacing will result in finer discretization near the leading edge of the airfoil compared to the default constant spacing. 
+6. Selecting finite thickness will apply a finite thickness at the trailing edge compared to the default zero thickness.
+7. Clicking *OK* generates the airfoil profile.
+8. Extrude, etc. in the modeling environment. 
 
 ## Credits :raised_hands:
 
 NACA generation portions of this code are from [naca.py by Dirk Gorissen](https://github.com/dgorissen/naca). 
+
+Chord length support was contributed by [Gunter Hager](https://github.com/gunterhager).
 
 Thanks to the [Fusion 360 development team](https://github.com/AutodeskFusion360) for code samples and the development platform/API. 
 
