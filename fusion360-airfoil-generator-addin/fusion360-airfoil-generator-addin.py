@@ -319,7 +319,7 @@ def connectPointsLines(pts, sketchName='', scale=1):
 
     sketch.isComputeDeferred = False
 
-def connectPointsMidpointSplines(pts, sketchName=''):
+def connectPointsMidpointSplines(pts, sketchName='', scale=1):
     # Experimental, not implemented
     # Connects a closed set of 2D points with midpoint splines
     # Format of pts should be ([x1,x2,...,xn][y1,y2,...,yn])
@@ -348,7 +348,7 @@ def connectPointsMidpointSplines(pts, sketchName=''):
         xMidPt = (point2x + point1x) / 2
         yMidPt = (point2y + point1y) / 2
 
-        points3d.add(adsk.core.Point3D.create(xMidPt, yMidPt, 0))
+        points3d.add(adsk.core.Point3D.create(xMidPt * scale, yMidPt * scale, 0))
 
     spline = sketch.sketchCurves.sketchFittedSplines.add(points3d)
     spline.isClosed = True
@@ -393,15 +393,13 @@ def run(context):
         ui = app.userInterface
 
         commandName = 'Airfoil'
-        commandDescription = """
-        Generate sketch profiles for NACA 4 and 5 series airfoils.
-
-        Specify a NACA 4 or 5 series airfoil in the format "2412" and choose the number of points on top & bottom for discretization. Resulting profile will have 2*numPoints+1 total.
-
-        Half cosine spacing provides finer discretization near the leading edge of the airfoil compared to constant spacing, resulting in a smoother LE.
-
-        Finite thickness is applied at the trailing edge, in contrast to a zero thickness in which the upper and lower surfaces meet at a sharp point.
-        """
+        commandDescription = (
+            'Generate sketch profiles for NACA 4 and 5 series airfoils.\n\n'
+            'Specify a NACA 4 or 5 series airfoil in the format "2412" and choose the number of points on top & bottom for discretization. Resulting profile will have approximately 2*numPoints total.\n\n'
+            'Chord length sets the size of the generated profile, so no scaling is needed afterwards.\n\n'
+            'Half cosine spacing provides finer discretization near the leading edge of the airfoil compared to constant spacing, resulting in a smoother LE.\n\n'
+            'Finite thickness is applied at the trailing edge, in contrast to a zero thickness in which the upper and lower surfaces meet at a sharp point.\n\n'
+        )
         commandResources = './resources'
         iconResources = './resources'
 

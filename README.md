@@ -31,7 +31,7 @@ Two options:
 
 1. If using the addin, select the *Airfoil* option from the *SKETCH* panel. For the script, execute script from *ADD-INS* panel.
 2. Specify the NACA number for a 4 or 5 series airfoil.
-3. Specify the number of points per side. Total points will be 2*numPoints+1. 
+3. Specify the number of points per side. Total points will be approximately 2*numPoints. 
 4. Specify the chord length. The profile is generated at this size, so no scaling is needed afterwards.
 5. Selecting half cosine spacing will result in finer discretization near the leading edge of the airfoil compared to the default constant spacing. 
 6. Selecting finite thickness will apply a finite thickness at the trailing edge compared to the default zero thickness.
