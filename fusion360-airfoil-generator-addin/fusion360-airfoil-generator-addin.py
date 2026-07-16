@@ -7,16 +7,23 @@ from math import pi
 from math import pow
 from math import sqrt
 
-import adsk.core, adsk.fusion, adsk.cam, traceback
+import adsk.core, adsk.fusion, traceback
 
 commandIdOnPanel = 'airfoilCommandOnPanel'
 defaultAirfoilProfile = '2412'
 defaultAirfoilNumPts = 120
-defaultAirfoilCordLength = 100
+defaultAirfoilChordLength = 100
 defaultAirfoilHalfCosine = False
 defaultAirfoilFT = False
 maxNumPts = 500
 minNumPts = 10
+
+# Chord length is authored and displayed in mm, but the Fusion API takes and
+# returns lengths in its internal unit, cm.
+mmToCm = 0.1
+
+# Separation in cm below which two sketch points are treated as coincident.
+pointTolerance = 1e-6
 
 # global set of event handlers to keep them referenced for the duration of the command
 handlers = []
@@ -286,18 +293,29 @@ def connectPointsLines(pts, sketchName='', scale=1):
     xs = pts[0]
     ys = pts[1]
     coordinates = list(zip(xs, ys))
+
+    # With a zero thickness TE the upper and lower surfaces meet, so the last
+    # coordinate repeats the first to within rounding error. Drop it rather
+    # than hand Fusion a zero length closing line. A finite thickness TE leaves
+    # a real gap, and the closing line becomes the blunt trailing edge.
+    x0, y0 = coordinates[0]
+    xn, yn = coordinates[-1]
+    if sqrt(pow((xn - x0) * scale, 2) + pow((yn - y0) * scale, 2)) < pointTolerance:
+        coordinates = coordinates[:-1]
+
     points = [adsk.core.Point3D.create(x * scale, y * scale, 0) for (x, y) in coordinates]
     lines = sketch.sketchCurves.sketchLines
+    firstPoint = None
     previousPoint = points[0]
-    stop = len(points) - 1
-    for index in range(1, stop):
+    for index in range(1, len(points)):
         line = lines.addByTwoPoints(previousPoint, points[index])
-        if index == 1:
-                firstPoint = line.startSketchPoint
+        if firstPoint is None:
+            firstPoint = line.startSketchPoint
         previousPoint = line.endSketchPoint
 
     # Connect to first point to close the polygon
-    lines.addByTwoPoints(previousPoint, firstPoint)
+    if firstPoint is not None:
+        lines.addByTwoPoints(previousPoint, firstPoint)
 
     sketch.isComputeDeferred = False
 
@@ -398,7 +416,7 @@ def run(context):
                 airfoilNumPts = defaultAirfoilNumPts
                 airfoilHalfCosine = defaultAirfoilHalfCosine
                 airfoilFT = defaultAirfoilFT
-                airfoilCordLength = defaultAirfoilCordLength
+                airfoilChordLength = defaultAirfoilChordLength * mmToCm
 
                 # Generate the airfoil sketch for given parameters
                 try:
@@ -443,8 +461,11 @@ def run(context):
                             airfoilHalfCosine = input.value
                         elif input.id == 'airfoilFT':
                             airfoilFT = input.value
-                        elif input.id == 'airfoilCordLength':
-                            airfoilCordLength = input.value
+                        elif input.id == 'airfoilChordLength':
+                            airfoilChordLength = input.value
+                            if airfoilChordLength <= 0:
+                                ui.messageBox('Chord length must be greater than zero')
+                                airfoilError = True
                         else:
                             ui.messageBox('Unrecognized input: ' + input.id)
                             airfoilError = True
@@ -452,7 +473,7 @@ def run(context):
                     if airfoilError == False:
                         pts = naca(airfoilProfile, airfoilNumPts, airfoilFT, airfoilHalfCosine)
                         sketchName = ' NACA ' + str(airfoilProfile)
-                        connectPointsLines(pts, sketchName, airfoilCordLength)
+                        connectPointsLines(pts, sketchName, airfoilChordLength)
                         args.isValidResult = True
                     else:
                         args.isValidResult = False
@@ -481,7 +502,7 @@ def run(context):
                         inputs = cmd.commandInputs
                         inputs.addStringValueInput('airfoilProfile', 'NACA profile', defaultAirfoilProfile)
                         inputs.addStringValueInput('airfoilNumPts', 'Points per side', str(defaultAirfoilNumPts))
-                        inputs.addValueInput('airfoilCordLength', 'Cord length', 'mm', adsk.core.ValueInput.createByReal(defaultAirfoilCordLength))
+                        inputs.addValueInput('airfoilChordLength', 'Chord length', 'mm', adsk.core.ValueInput.createByReal(defaultAirfoilChordLength * mmToCm))
                         inputs.addBoolValueInput('airfoilHalfCosine', 'Half cosine spacing', True, '', defaultAirfoilHalfCosine)
                         inputs.addBoolValueInput('airfoilFT', 'Finite thickness TE', True, '', defaultAirfoilFT)
 
